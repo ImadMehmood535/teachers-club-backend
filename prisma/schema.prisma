@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model admin_details {
+  id        Int       @id @default(autoincrement())
+  phone     String?   @db.VarChar(255)
+  name      String?   @db.VarChar(255)
+  verified  Boolean?  @default(false)
+  address   String?   @db.VarChar(255)
+  image     String?   @db.VarChar(255)
+  createdAt DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt DateTime? @updatedAt
+  admins    admins[]
+}
+
+model admin_sessions {
+  id            Int      @id @default(autoincrement())
+  admin_id      Int?
+  refresh_token String?  @db.VarChar(255)
+  ip_address    String?  @db.VarChar(255)
+  browser       String?  @db.VarChar(255)
+  createdAt     DateTime @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime @updatedAt
+  admins        admins?  @relation(fields: [admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_ADMIN_ID")
+  contactId     Int?
+
+  @@index([admin_id], map: "FK_ADMIN_ID")
+}
+
+model admins {
+  id              Int              @id @default(autoincrement())
+  email           String?          @db.VarChar(255)
+  password        String?          @db.VarChar(255)
+  admin_detail_id Int?
+  createdAt       DateTime         @default(now()) @db.Timestamp(0)
+  updatedAt       DateTime         @updatedAt
+  admin_sessions  admin_sessions[]
+  admin_details   admin_details?   @relation(fields: [admin_detail_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_admin_details_id")
+
+  @@index([admin_detail_id], map: "FK_ADMIN_DETAILS_ID")
+}
+
+model contacts {
+  id      Int     @id @default(autoincrement())
+  email   String? @db.VarChar(255)
+  subject String? @db.VarChar(255)
+  name    String? @db.VarChar(255)
+  message String? @db.LongText
+
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt
+}
+
+model community {
+  id         Int      @id @default(autoincrement())
+  first_name String?  @db.VarChar(255)
+  last_name  String?  @db.VarChar(255)
+  picture    String?  @db.VarChar(255)
+  message    String?  @db.LongText
+  rating     Int?
+  createdAt  DateTime @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt
+}
+
+model featured_teachers {
+  id         Int      @id @default(autoincrement())
+  teacher_id Int
+  createdAt  DateTime @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt
+  users      users?   @relation(fields: [teacher_id], references: [id])
+}
+
+model box_types {
+  id        Int      @id @default(autoincrement())
+  name      String?  @unique @db.VarChar(255)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt
+  boxes     boxes[]
+}
+
+model boxes {
+  id                 Int                  @id @default(autoincrement())
+  title              String?              @db.VarChar(255)
+  item_name          String?              @db.VarChar(255)
+  details            String?              @db.LongText
+  price              Float?
+  height             Float?
+  length             Float?
+  width              Float?
+  weight             Float?
+  item_quantity      Int?
+  is_brand           Boolean?
+  type_id            Int?
+  image              String?              @db.VarChar(255)
+  box_types          box_types?           @relation(fields: [type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_BOX_TYPE_ID")
+  createdAt          DateTime             @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime             @updatedAt
+  user_boxes         user_boxes[]
+  order_details      order_details[]
+  subscribes_details subscribes_details[]
+
+  @@index([type_id], map: "FK_BOX_TYPE_ID")
+}
+
+model brands {
+  id                 Int                  @id @default(autoincrement())
+  name               String?              @unique @db.VarChar(255)
+  createdAt          DateTime             @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime             @updatedAt
+  order_details      order_details[]
+  subscribes_details subscribes_details[]
+}
+
+model subscribes {
+  id                 Int                  @id @default(autoincrement())
+  user_id            Int
+  customer_id        String?
+  first_name         String?              @db.VarChar(255)
+  last_name          String?              @db.VarChar(255)
+  email              String?              @db.VarChar(255)
+  number             String?              @db.VarChar(255)
+  is_deleted         Boolean?             @default(false)
+  is_paid            Boolean?             @default(false)
+  is_advance         Boolean?             @default(false)
+  tax_amount         Float?
+  shipping_cost      Float?
+  gross_amount       Float?
+  net_amount         Float?
+  createdAt          DateTime             @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime             @updatedAt
+  users              users?               @relation(fields: [user_id], references: [id])
+  subscribes_details subscribes_details[]
+}
+
+model subscribes_details {
+  id                Int         @id @default(autoincrement())
+  subscribe_id      Int?
+  selected_brand_id Int?
+  box_id            Int?
+  shipper_id        Int?
+  height            Int?
+  width             Int?
+  length            Int?
+  weight            Int?
+  quantity          Int?
+  delivery_address  String?     @db.VarChar(255)
+  city              String?     @db.VarChar(255)
+  postal_code       String?     @db.VarChar(255)
+  type              String?     @db.VarChar(255)
+  createdAt         DateTime    @default(now()) @db.Timestamp(0)
+  updatedAt         DateTime    @updatedAt
+  brands            brands?     @relation(fields: [selected_brand_id], references: [id])
+  subscribes        subscribes? @relation(fields: [subscribe_id], references: [id])
+  boxes             boxes?      @relation(fields: [box_id], references: [id])
+}
+
+model orders {
+  id              Int             @id @default(autoincrement())
+  subscription_id Int?
+  user_id         Int
+  first_name      String?         @db.VarChar(255)
+  last_name       String?         @db.VarChar(255)
+  email           String?         @db.VarChar(255)
+  number          String?         @db.VarChar(255)
+  status          String?         @db.VarChar(255)
+  tax_amount      Float?
+  shipping_cost   Float?
+  gross_amount    Float?
+  net_amount      Float?
+  createdAt       DateTime?
+  placed          DateTime        @default(now()) @db.Timestamp(0)
+  dispatched      DateTime?
+  transit         DateTime?
+  delivered       DateTime?
+  users           users?          @relation(fields: [user_id], references: [id])
+  order_details   order_details[]
+}
+
+model order_details {
+  id                Int     @id @default(autoincrement())
+  order_id          Int?
+  selected_brand_id Int?
+  box_id            Int?
+  shipper_id        Int?
+  quantity          Int?
+  delivery_address  String? @db.VarChar(255)
+  city              String? @db.VarChar(255)
+  postal_code       String? @db.VarChar(255)
+  type              String? @db.VarChar(255)
+  brands            brands? @relation(fields: [selected_brand_id], references: [id])
+  orders            orders? @relation(fields: [order_id], references: [id])
+  boxes             boxes?  @relation(fields: [box_id], references: [id])
+}
+
+model user_boxes {
+  id               Int      @id @default(autoincrement())
+  user_id          Int?
+  box_id           Int?
+  max_quantity     Int?
+  donated_quantity Int?     @default(0)
+  status           Boolean? @default(false)
+  deleted          Boolean? @default(false)
+  createdAt        DateTime @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime @updatedAt
+  boxes            boxes?   @relation(fields: [box_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_BOX_ID")
+  users            users?   @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_USER_ID")
+
+  @@index([box_id], map: "FK_BOX_ID")
+  @@index([user_id], map: "FK_USER_ID")
+}
+
+model user_details {
+  id                      Int      @id @default(autoincrement())
+  userId                  Int      @unique
+  firstname               String?  @db.VarChar(255)
+  lastname                String?  @db.VarChar(255)
+  address                 String?  @db.VarChar(255)
+  city                    String?  @db.VarChar(255)
+  postal_code             String?  @db.VarChar(255)
+  phone                   String?  @db.VarChar(255)
+  otp                     String?  @db.VarChar(255)
+  image                   String?  @db.VarChar(255)
+  is_verified             Boolean? @default(false)
+  is_approved             Boolean? @default(false)
+  is_featured             Boolean? @default(false)
+  is_sponsored            Boolean? @default(false)
+  requirement_description String?  @db.LongText
+  requirement_details     String?  @db.LongText
+  requirements            String?  @db.LongText
+  current_institute       String?  @db.VarChar(255)
+  createdAt               DateTime @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime @updatedAt
+  users                   users?   @relation(fields: [userId], references: [id])
+}
+
+model user_profile_views {
+  id                                        Int      @id @default(autoincrement())
+  viewer_id                                 Int?
+  user_id                                   Int?
+  createdAt                                 DateTime @default(now()) @db.Timestamp(0)
+  updatedAt                                 DateTime @updatedAt
+  users_user_profile_views_viewer_idTousers users?   @relation("user_profile_views_viewer_idTousers", fields: [viewer_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_PROFILE_VIEW_ID")
+  users_user_profile_views_user_idTousers   users?   @relation("user_profile_views_user_idTousers", fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_USERS_ID")
+
+  @@index([viewer_id], map: "FK_PROFILE_VIEW_ID")
+  @@index([user_id], map: "FK_USERS_ID")
+}
+
+model user_sessions {
+  id            Int      @id @default(autoincrement())
+  user_id       Int?
+  ip_address    String?  @db.VarChar(255)
+  browser       String?  @db.VarChar(255)
+  refresh_token String?  @db.VarChar(255)
+  createdAt     DateTime @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime @updatedAt
+  users         users?   @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_USER_SESSION_ID")
+
+  @@index([user_id], map: "FK_USER_SESSION_ID")
+}
+
+model users {
+  id                                                     Int                  @id @default(autoincrement())
+  email                                                  String?              @db.VarChar(255)
+  password                                               String?              @db.VarChar(255)
+  type                                                   String?              @db.VarChar(255)
+  createdAt                                              DateTime             @default(now()) @db.Timestamp(0)
+  updatedAt                                              DateTime             @updatedAt
+  user_boxes                                             user_boxes[]
+  user_profile_views_user_profile_views_viewer_idTousers user_profile_views[] @relation("user_profile_views_viewer_idTousers")
+  user_profile_views_user_profile_views_user_idTousers   user_profile_views[] @relation("user_profile_views_user_idTousers")
+  user_sessions                                          user_sessions[]
+  user_details                                           user_details?
+  orders                                                 orders[]
+  subscribes                                             subscribes[]
+  featured_teachers                                      featured_teachers[]
+}
